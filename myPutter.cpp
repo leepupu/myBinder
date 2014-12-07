@@ -7,6 +7,8 @@
 #include <limits.h>
 #include <windows.h>
 #include "MyFile.h"
+#include "zlib.h"
+#include "zconf.h"
 
 using namespace std;
 
@@ -31,8 +33,7 @@ int main(int argc, char** argv)
     while(fin >> a)
     {
         cout << a.filename << endl;
-        cout << a.length << endl;
-        cout << (int)a.data[0] << endl;
+        cout << "compressed length: " << a.length << endl;
         string tmp_file = buf;
         bool exe = false;
         ofstream fout;
@@ -48,7 +49,12 @@ int main(int argc, char** argv)
         {
             fout.open(a.filename.c_str(), ios::out | ios::binary);
         }
-        fout.write(a.data, a.length);
+        char* dst_buffer = new char[a.origin_length+1];
+        int new_length = a.origin_length;
+
+        uncompress((Bytef*)dst_buffer, (uLongf*)&new_length, (Bytef*)a.data, a.length);
+
+        fout.write(dst_buffer, new_length);
         fout.close();
         if(exe)
         {

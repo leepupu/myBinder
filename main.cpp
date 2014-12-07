@@ -10,6 +10,8 @@
 #include <olectl.h>
 #include <fcntl.h>
 #include <io.h>
+#include "zlib.h"
+#include "zconf.h"
 
 
 #pragma comment(lib, "oleaut32.lib")
@@ -124,6 +126,7 @@ bool extract_putter(char* self_path, string dst_file)
     ofstream fout(dst_file.c_str(), ios::out | ios::binary);
 
     char* buffer = new char[size+1];
+    cout << "extract putter size: " << size << endl;
     fin.read(buffer, size);
     fout.write(buffer, size);
 
@@ -146,7 +149,6 @@ string get_temp_folder()
 
 int main(int argc, char** argv)
 {
-
     if(argc < 3)
     {
         cout << "too few args\n";
@@ -177,8 +179,9 @@ int main(int argc, char** argv)
     string dst_file = dst_folder + "\\" + argv[3];
 
     extract_putter(argv[0], dst_file);
-
+    //return -1;
     setIcon((char*)icon_path.c_str(), (char*)dst_file.c_str());
+    
     DIR *dir;
     struct dirent *ent;
     ofstream fout(dst_file.c_str(), ios::out | ios::app | ios::ate | ios::binary);
@@ -200,19 +203,41 @@ int main(int argc, char** argv)
 
         a.filename = new char[strlen(ent->d_name+1)];
         a.filename = (ent->d_name);
-        cout << "here\n";
+
         fin.seekg(0, fin.end);
         int length = fin.tellg();
-        cout << "here\n";
         fin.seekg(0, fin.beg);
 
-        a.data = new char[length+1];
+        //a.data = new char[length+1];
 
-        fin.read(a.data, length);
+        char* source_buffer = new char[length+1];
+        char* dst_buffer = new char[length+1];
 
-        a.data[length] = EOF;
+        cout << "before compress: " << length << endl;
+
+        fin.read(source_buffer, length);
+
+        int new_length = length;
+
+        if(compress((Bytef*)dst_buffer, (uLongf*)&new_length, (Bytef*)source_buffer, (uLongf)length) != Z_OK)
+        {
+          cout << "error while compress file: " << a.filename << endl;
+          break;
+        }
+
+        cout << "after compress: " << new_length << endl;
+
+        // use comporess data
+        a.data = dst_buffer;
+        a.length = new_length;
+        a.origin_length = length;
+
+        //uncompress data
+        /*
+        a.data = source_buffer;
         a.length = length;
-        cout << "here\n";
+        */
+
         fout << a;
         fout2 << a;
         fin.close();

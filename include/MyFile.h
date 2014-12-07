@@ -14,12 +14,14 @@ class MyFile
         char* data;
         string filename;
         int length;
+        int origin_length;
         // Insertion operator
         friend std::ostream& operator<<(std::ostream& os, const MyFile& s)
         {
             // write out individual members of s with an end of line between each one
             os << s.filename << '\n';
             os << s.length << '\n';
+            os << s.origin_length << '\n';
             os.write(s.data, s.length);
             return os;
         }
@@ -31,6 +33,7 @@ class MyFile
             getline(is, s.filename);
             // read in individual members of s
             is >> s.length;
+            is >> s.origin_length;
             std::cout << s.filename << std::endl;
             is.get();
             if(s.data != 0)

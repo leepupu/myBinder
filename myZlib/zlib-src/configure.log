@@ -1,0 +1,24 @@
+--------------------
+./configure
+Wed Dec  3 11:33:56     2014
+Checking for gcc...
+=== ztest596.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+gcc -c ztest596.c
+... using gcc
+Please use win32/Makefile.gcc instead.
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure win32/Makefile.gcc
+Wed Dec  3 11:34:31     2014
+unknown option: win32/Makefile.gcc
+./configure --help for help
+** ./configure aborting.
+--------------------
+
+
