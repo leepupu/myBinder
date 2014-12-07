@@ -9,4 +9,6 @@ myBinder
 
 make.bat
 
-myBinder.exe test dst notepad.exe
+test.bat
+
+find binded exe in dst folder
