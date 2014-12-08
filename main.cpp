@@ -10,12 +10,11 @@
 #include <olectl.h>
 #include <fcntl.h>
 #include <io.h>
+// Source http://www.zlib.net/
+// Comiled by myself
 #include "zlib.h"
 #include "zconf.h"
-
-
-#pragma comment(lib, "oleaut32.lib")
-#pragma comment(lib, "shell32.lib")
+#define DEBUG 0 // isolate appendent data for debug
 
 using namespace std;
 
@@ -35,6 +34,8 @@ typedef struct {
 } GROUPICON;
 #pragma pack(pop)
 
+
+// Source http://stackoverflow.com/questions/27202883/updateresource-call-for-setting-windows-icon-ico-not-working-consistently
 void setIcon(char* IconFile, char* ExecutableFile)
 {
    HANDLE hWhere = BeginUpdateResource(ExecutableFile, FALSE);
@@ -66,7 +67,6 @@ void setIcon(char* IconFile, char* ExecutableFile)
       // will be larger than 22 bytes
       buffersize-22  // length of buffer
      );
-
 
    // Again, we use this structure for educational purposes.
    // The icon header and directory entries can be read from
@@ -115,19 +115,20 @@ BOOL SaveIcon3(TCHAR *szIconFile, HICON hIcon[], int nNumIcons);
 
 bool extract_putter(char* self_path, string dst_file)
 {
+    // extract myPutter appended by appender.exe to dst_file
     ifstream fin(self_path, ios::in | ios::binary);
     int size;
     fin.seekg(-4, fin.end);
-    cout << fin.tellg() << endl;
+    // cout << fin.tellg() << endl;
     fin.read((char*)&size, sizeof(size));
-    cout << "size: " << size << endl;
-    fin.seekg(-(size+4), ios::cur);
+    cout << "size of  myPutter: " << size << endl;
+    fin.seekg(-(size+4), ios::cur); // move file pointer back to myputter's head
     cout << "fin.tellg: " << fin.tellg() << endl;
-    ofstream fout(dst_file.c_str(), ios::out | ios::binary);
 
+    ofstream fout(dst_file.c_str(), ios::out | ios::binary);  // writer of myputter
     char* buffer = new char[size+1];
-    cout << "extract putter size: " << size << endl;
-    fin.read(buffer, size);
+
+    fin.read(buffer, size); // simple read and write
     fout.write(buffer, size);
 
     fout.close();
@@ -135,7 +136,7 @@ bool extract_putter(char* self_path, string dst_file)
     delete [] buffer;
 }
 
-string get_temp_folder()
+string get_temp_folder() // Use windows API to get %Temp% absolutly path
 {
     char buf[MAX_PATH];
     if (GetTempPath (MAX_PATH, buf) == 0)
@@ -155,7 +156,7 @@ int main(int argc, char** argv)
         return -1;
     }
     string icon_path;
-    string target = argv[1];
+    string target = argv[1]; // host file path
     target += "\\";
     target += argv[3];
     int IconCount = ExtractIconEx(target.c_str(), -1, NULL,NULL, 0);
@@ -171,6 +172,7 @@ int main(int argc, char** argv)
         icon_path += "\\";
         icon_path += argv[3];
         icon_path += ".ico";
+        // Extract host file icon to temp folder
         SaveIcon3((char*)icon_path.c_str(), hIcons, 1);
     }
     cout << "count: " << IconCount << endl;
@@ -178,38 +180,42 @@ int main(int argc, char** argv)
     string dst_folder = argv[2];
     string dst_file = dst_folder + "\\" + argv[3];
 
-    extract_putter(argv[0], dst_file);
-    //return -1;
+    extract_putter(argv[0], dst_file); // Step1
+
+    // Set icon in temp folder which just extracted to myPutter
     setIcon((char*)icon_path.c_str(), (char*)dst_file.c_str());
 
+    // Emulator for all files in src folder
     DIR *dir;
     struct dirent *ent;
     ofstream fout(dst_file.c_str(), ios::out | ios::app | ios::ate | ios::binary);
-    ofstream fout2("output.dat", ios::out | ios::binary);
-    cout << fout.tellp() << endl;
+    ofstream fout2;
+    if(DEBUG)
+      fout2.open("output.dat", ios::out | ios::binary);
     int output_size = fout.tellp();
     if ((dir = opendir (src_folder)) != NULL) {
       /* print all the files and directories within directory */
       while ((ent = readdir (dir)) != NULL) {
         string fp(src_folder);
-        if(strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
+        if(strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) // is self folder or parent folder?
             continue;
         fp += "\\";
         fp += ent->d_name;
-        cout << fp << endl;
-        printf ("%s\n", ent->d_name);
+
+        // Reading file
         ifstream fin(fp.c_str(), ios::in | ios::binary);
         MyFile a;
 
+        // Set filename
         a.filename = new char[strlen(ent->d_name+1)];
         a.filename = (ent->d_name);
 
+        // Get file size
         fin.seekg(0, fin.end);
         int length = fin.tellg();
         fin.seekg(0, fin.beg);
 
-        //a.data = new char[length+1];
-
+        // Prepare buffer to compress file content
         char* source_buffer = new char[length+1];
         char* dst_buffer = new char[length+1];
 
@@ -227,34 +233,38 @@ int main(int argc, char** argv)
 
         cout << "after compress: " << new_length << endl;
 
-        // use comporess data
+        // set myfile data with comporess data
         a.data = dst_buffer;
         a.length = new_length;
         a.origin_length = length;
 
-        //uncompress data
-        /*
-        a.data = source_buffer;
-        a.length = length;
-        */
-
         fout << a;
-        fout2 << a;
+        if(DEBUG)
+          fout2 << a;
+
+        // Release memory
+        delete [] source_buffer;
+        delete [] dst_buffer;
+
+
         fin.close();
       }
       closedir (dir);
     } else {
       /* could not open directory */
-      perror ("");
+      perror ("could not open directory");
       return -1;
     }
-    cout << fout.tellp() << endl;
     output_size = fout.tellp() - output_size;
-    cout <<"output_size: " << output_size << endl;
+    cout <<"appendent data size: " << output_size << endl;
+
     fout.write((char*)&output_size, sizeof(output_size));
-    fout2.write((char*)&output_size, sizeof(output_size));
+    if(DEBUG)
+      fout2.write((char*)&output_size, sizeof(output_size));
+
     fout.close();
-    fout2.close();
+    if(DEBUG)
+      fout2.close();
     return 0;
 }
 
@@ -485,6 +495,7 @@ static UINT WriteIconData(HANDLE hFile, HBITMAP hBitmap)
     return nBitmapBytes;
 }
 
+// Source http://www.cnblogs.com/devc/p/3423750.html
 //
 // Create a .ICO file, using the specified array of HICON images
 //

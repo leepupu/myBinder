@@ -18,13 +18,20 @@ int main(int argc, char** argv)
     }
     ifstream fin(argv[1], ios::in | ios::binary);
     ofstream fout(argv[2], ios::out | ios::app | ios::ate | ios::binary);
+
+    // get source file size
     fin.seekg(0, ios::end);
     int length = fin.tellg();
     fin.seekg(0, ios::beg);
+
+    // prepare buffer
     char buffer[length+1];
+
+    // just append
     fin.read(buffer, length);
     fout.write(buffer, length);
     fout.write((char*)&length, sizeof(length));
+
     fin.close();
     fout.close();
 }
