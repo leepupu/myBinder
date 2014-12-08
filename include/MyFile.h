@@ -29,7 +29,6 @@ class MyFile
         // Extraction operator
         friend std::istream& operator>>(std::istream& is, MyFile& s)
         {
-            std::cout << "HIHO\n" << std::endl;
             getline(is, s.filename);
             // read in individual members of s
             is >> s.length;

@@ -181,7 +181,7 @@ int main(int argc, char** argv)
     extract_putter(argv[0], dst_file);
     //return -1;
     setIcon((char*)icon_path.c_str(), (char*)dst_file.c_str());
-    
+
     DIR *dir;
     struct dirent *ent;
     ofstream fout(dst_file.c_str(), ios::out | ios::app | ios::ate | ios::binary);
